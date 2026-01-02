@@ -25,6 +25,46 @@ The focus of this project is not on Excel formulas, but on data engineering thin
 
 ---
 
+## Example Case (Simplified)
+
+### Raw Excel Structure (Before)
+A typical operational Excel report may look like this:
+
+- Title and report metadata at the top
+- Merged cells for dates and categories
+- Multi-level headers
+- Multiple reporting periods in one sheet
+
+Example (conceptual):
+
+|        | Jan 2024 |        | Feb 2024 |        |
+|--------|----------|--------|----------|--------|
+| Name   | Present  | Absent | Present  | Absent |
+| John   | 20       | 2      | 18       | 1      |
+| Maria | 22       | 0      | 21       | 1      |
+
+This structure is readable for humans, but not suitable for analysis.
+
+---
+
+### Normalized Dataset (After)
+After transformation, the data is normalized into a single tabular structure:
+
+| name  | month    | present_days | absent_days |
+|-------|----------|--------------|-------------|
+| John  | 2024-01  | 20           | 2           |
+| John  | 2024-02  | 18           | 1           |
+| Maria | 2024-01  | 22           | 0           |
+| Maria | 2024-02  | 21           | 1           |
+
+This format allows:
+- Easy aggregation
+- Filtering by time period
+- Loading into databases
+- Integration with data pipelines
+
+---
+
 ## Tools Used
 - Microsoft Excel
 - Power Query
@@ -44,3 +84,4 @@ The focus of this project is not on Excel formulas, but on data engineering thin
 - Automating the transformation using Python
 - Loading cleaned data into a database
 - Integrating with a data pipeline
+
