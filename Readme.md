@@ -1,87 +1,62 @@
-# Excel Chaos to Clean Dataset
+# Project 4 — Excel Chaos to Clean Dataset (Operational Data)
 
 ## Overview
-This project demonstrates how unstructured and messy Excel reports commonly found in operational environments can be transformed into clean, analysis-ready datasets.
+In many operational environments, especially field operations, data is often recorded in Excel files designed for **human readability**, not for analytics or databases.
 
-The focus of this project is not on Excel formulas, but on data engineering thinking: identifying structure, normalizing data, and preparing it for downstream analysis.
+This project demonstrates how messy, human-oriented Excel reports can be transformed into a **clean, normalized dataset** that is ready for database ingestion and downstream analysis.
 
----
-
-## Common Problems Found in Raw Excel Reports
-- Merged cells
-- Multi-level headers
-- Inconsistent column structures
-- Manual data entry errors
-- Multiple reporting periods in a single sheet
+The focus of this project is **data engineering**, not data analysis or visualization.
 
 ---
 
-## Approach
-1. Identify actual data vs metadata
-2. Normalize the data into a single, tabular structure
-3. Standardize column names and data types
-4. Validate data consistency
-5. Prepare dataset for analysis or pipeline integration
+## Problem Description
+The original Excel data has several common real-world issues:
+
+- Merged cells used for reporting periods (e.g., monthly headers)
+- Dates represented as column headers (1–30)
+- Measurement types stored as rows instead of columns
+- Multiple units of measurement in a single table
+- Placeholder symbols such as `-` or visually empty cells
+- Manual data entry artifacts (spaces and hidden characters)
+
+Such structures are readable for humans but problematic for automation, aggregation, and databases.
 
 ---
 
-## Example Case (Simplified)
+## Raw Excel Structure (Conceptual Example)
 
-### Raw Excel Structure (Before)
-A typical operational Excel report may look like this:
+| No | Name     | Type       | 1 | 2 | 3 | ... |
+|----|----------|------------|---|---|---|-----|
+| 01 | Worker A | Janjang    | 3 | 5 | 7 |     |
+|    |          | Brondolan  |90 |100|95 |     |
 
-- Title and report metadata at the top
-- Merged cells for dates and categories
-- Multi-level headers
-- Multiple reporting periods in one sheet
-
-Example (conceptual):
-
-|        | Jan 2024 |        | Feb 2024 |        |
-|--------|----------|--------|----------|--------|
-| Name   | Present  | Absent | Present  | Absent |
-| John   | 20       | 2      | 18       | 1      |
-| Maria | 22       | 0      | 21       | 1      |
-
-This structure is readable for humans, but not suitable for analysis.
+**Notes:**
+- The reporting month is displayed as a merged cell above the table
+- Dates (1–30) are column headers
+- `Janjang` is measured in pieces (pcs)
+- `Brondolan` is measured in kilograms (kg)
+- Placeholder symbols may represent missing values
 
 ---
 
-### Normalized Dataset (After)
-After transformation, the data is normalized into a single tabular structure:
+## Target Data Structure (Normalized)
 
-| name  | month    | present_days | absent_days |
-|-------|----------|--------------|-------------|
-| John  | 2024-01  | 20           | 2           |
-| John  | 2024-02  | 18           | 1           |
-| Maria | 2024-01  | 22           | 0           |
-| Maria | 2024-02  | 21           | 1           |
+| no | name     | date       | type      | value | unit |
+|----|----------|------------|-----------|-------|------|
+| 01 | Worker A | 2024-01-01 | Janjang   | 3     | pcs  |
+| 01 | Worker A | 2024-01-01 | Brondolan | 90    | kg   |
+| 01 | Worker A | 2024-01-02 | Janjang   | 5     | pcs  |
+| 01 | Worker A | 2024-01-02 | Brondolan | 100   | kg   |
 
-This format allows:
-- Easy aggregation
-- Filtering by time period
-- Loading into databases
-- Integration with data pipelines
-
----
-
-## Tools Used
-- Microsoft Excel
-- Power Query
-- Python (Pandas)
+This structure ensures:
+- One row represents one event
+- One column represents one meaning
+- Measurement units are explicit
+- Data is safe for database ingestion
 
 ---
 
-## What This Project Demonstrates
-- Real-world data wrangling skills
-- Ability to handle human-generated data
-- Data normalization and standardization
-- Engineering mindset applied to business reports
+## Transformation Approach
+The transformation follows a repeatable data engineering pattern:
 
----
-
-## Possible Extensions
-- Automating the transformation using Python
-- Loading cleaned data into a database
-- Integrating with a data pipeline
-
+1. Separate metadat
