@@ -59,4 +59,36 @@ This structure ensures:
 ## Transformation Approach
 The transformation follows a repeatable data engineering pattern:
 
-1. Separate metadat
+1. Separate metadata from row-level data
+2. Normalize visually empty values and placeholder symbols
+3. Flatten multi-level headers
+4. Convert dates from columns into row values (unpivot)
+5. Treat measurement types as categorical values
+6. Explicitly assign units of measurement
+7. Validate consistency and completeness
+
+---
+
+## Engineering Focus
+This project emphasizes:
+- Data quality over visualization
+- Structural correctness over insight generation
+- Repeatability over one-off cleaning
+- Safe handling of sensitive operational data
+
+All examples are simplified and anonymized to reflect the original structure without exposing real production data.
+
+---
+
+## Outcome
+The final dataset:
+- Can be directly loaded into relational databases
+- Supports reliable aggregation and filtering
+- Reduces ambiguity for downstream analytics
+- Provides a trustworthy foundation for further analysis
+
+---
+
+## Key Takeaway
+> **Data engineering ensures that data does not lie.  
+> Insights come later, built on reliable foundations.**
