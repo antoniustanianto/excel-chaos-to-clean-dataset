@@ -13,10 +13,10 @@ The workflow now turns spreadsheet uploads into structured data while flagging i
 ## 📸 Automation Example
 
 ### Workflow Overview
-![Workflow](screenshots/workflow.png)
+![Workflow](screenshots/workflow.jpg)
 
 ### Example Telegram Report
-![Report](screenshots/telegram.png)
+![Report](screenshots/telegram.jpg)
 
 ### Clean Dataset Output
 ![Sheet](screenshots/sheet.png)
@@ -127,3 +127,4 @@ The final dataset:
 
 Data engineering ensures that data does not lie.  
 Insights come later, built on reliable foundations.
+
