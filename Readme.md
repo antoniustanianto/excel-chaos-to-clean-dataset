@@ -1,15 +1,40 @@
 # Project 4 — Excel Chaos to Clean Dataset (Operational Data)
 
-## Overview
-In many operational environments, especially field operations, data is often recorded in Excel files designed for **human readability**, not for analytics or databases.
+## 🔗 Automation Version
 
-This project demonstrates how messy, human-oriented Excel reports can be transformed into a **clean, normalized dataset** that is ready for database ingestion and downstream analysis.
+This project originally focused on transforming messy operational Excel reports into a clean, normalized dataset.
+
+I have since extended this concept into an automated pipeline using **n8n**, which performs ingestion, normalization, validation, and reporting automatically.
+
+The workflow now turns spreadsheet uploads into structured data while flagging inconsistencies and sending automated summaries.
+
+---
+
+## 📸 Automation Example
+
+### Workflow Overview
+![Workflow](screenshots/workflow.png)
+
+### Example Telegram Report
+![Report](screenshots/telegram.png)
+
+### Clean Dataset Output
+![Sheet](screenshots/sheet.png)
+
+---
+
+## Overview
+
+In many operational environments, especially field operations, data is often recorded in Excel files designed for human readability, not for analytics or databases.
+
+This project demonstrates how messy, human-oriented Excel reports can be transformed into a clean, normalized dataset ready for database ingestion and downstream analysis.
 
 The focus of this project is **data engineering**, not data analysis or visualization.
 
 ---
 
 ## Problem Description
+
 The original Excel data has several common real-world issues:
 
 - Merged cells used for reporting periods (e.g., monthly headers)
@@ -25,16 +50,17 @@ Such structures are readable for humans but problematic for automation, aggregat
 
 ## Raw Excel Structure (Conceptual Example)
 
-| No | Name     | Type       | 1 | 2 | 3 | ... |
-|----|----------|------------|---|---|---|-----|
-| 01 | Worker A | Janjang    | 3 | 5 | 7 |     |
-|    |          | Brondolan  |90 |100|95 |     |
+| No | Name     | Type     | 1 | 2 | 3 | ... |
+|----|----------|----------|---|---|---|-----|
+| 01 | Worker A | Janjang  | 3 | 5 | 7 |     |
+|    |          | Brondolan| 90|100|95 |     |
 
-**Notes:**
+**Notes**
+
 - The reporting month is displayed as a merged cell above the table
 - Dates (1–30) are column headers
-- `Janjang` is measured in pieces (pcs)
-- `Brondolan` is measured in kilograms (kg)
+- Janjang is measured in pieces (pcs)
+- Brondolan is measured in kilograms (kg)
 - Placeholder symbols may represent missing values
 
 ---
@@ -49,6 +75,7 @@ Such structures are readable for humans but problematic for automation, aggregat
 | 01 | Worker A | 2024-01-02 | Brondolan | 100   | kg   |
 
 This structure ensures:
+
 - One row represents one event
 - One column represents one meaning
 - Measurement units are explicit
@@ -57,6 +84,7 @@ This structure ensures:
 ---
 
 ## Transformation Approach
+
 The transformation follows a repeatable data engineering pattern:
 
 1. Separate metadata from row-level data
@@ -70,25 +98,32 @@ The transformation follows a repeatable data engineering pattern:
 ---
 
 ## Engineering Focus
+
 This project emphasizes:
+
 - Data quality over visualization
 - Structural correctness over insight generation
 - Repeatability over one-off cleaning
 - Safe handling of sensitive operational data
+- Automation readiness for real workflows
 
 All examples are simplified and anonymized to reflect the original structure without exposing real production data.
 
 ---
 
 ## Outcome
+
 The final dataset:
+
 - Can be directly loaded into relational databases
 - Supports reliable aggregation and filtering
 - Reduces ambiguity for downstream analytics
 - Provides a trustworthy foundation for further analysis
+- Can be automated into a repeatable ingestion pipeline
 
 ---
 
 ## Key Takeaway
-> **Data engineering ensures that data does not lie.  
-> Insights come later, built on reliable foundations.**
+
+Data engineering ensures that data does not lie.  
+Insights come later, built on reliable foundations.
