@@ -1,130 +1,262 @@
-# Project 4 — Excel Chaos to Clean Dataset (Operational Data)
+# Operational Spreadsheet ETL Pipeline
 
-## 🔗 Automation Version
+> Transforming human-oriented operational spreadsheets into trusted, analytics-ready datasets through automated validation, normalization, and business-rule driven ETL.
 
-This project originally focused on transforming messy operational Excel reports into a clean, normalized dataset.
-
-I have since extended this concept into an automated pipeline using **n8n**, which performs ingestion, normalization, validation, and reporting automatically.
-
-The workflow now turns spreadsheet uploads into structured data while flagging inconsistencies and sending automated summaries.
-
----
-
-## 📸 Automation Example
-
-### Workflow Overview
-![Workflow](screenshots/workflow.jpg)
-
-### Example Telegram Report
-![Report](screenshots/telegram.jpg)
-
-### Clean Dataset Output
-![Sheet](screenshots/sheet.png)
+| Project | Details |
+|----------|---------|
+| **Business Domain** | Plantation Operations |
+| **Project Type** | Operational Spreadsheet ETL Pipeline |
+| **Primary Capability** | ETL, Data Quality & Data Standardization |
+| **Data Source** | Operational Excel Reports |
+| **Architecture** | ETL |
+| **Automation** | n8n Workflow |
+| **Status** | ✅ Completed |
 
 ---
 
-## Overview
+# Overview
 
-In many operational environments, especially field operations, data is often recorded in Excel files designed for human readability, not for analytics or databases.
+Operational reporting spreadsheets are typically designed for human readability rather than machine processing. While convenient for daily operations, these spreadsheets often contain merged cells, repeated values, multi-level headers, and inconsistent structures that make automated processing difficult.
 
-This project demonstrates how messy, human-oriented Excel reports can be transformed into a clean, normalized dataset ready for database ingestion and downstream analysis.
+This project demonstrates how operational Excel reports can be transformed into trusted, analytics-ready datasets through a repeatable ETL process. The solution focuses on improving data quality, enforcing business rules, and preparing standardized datasets for downstream reporting and database ingestion.
 
-The focus of this project is **data engineering**, not data analysis or visualization.
-
----
-
-## Problem Description
-
-The original Excel data has several common real-world issues:
-
-- Merged cells used for reporting periods (e.g., monthly headers)
-- Dates represented as column headers (1–30)
-- Measurement types stored as rows instead of columns
-- Multiple units of measurement in a single table
-- Placeholder symbols such as `-` or visually empty cells
-- Manual data entry artifacts (spaces and hidden characters)
-
-Such structures are readable for humans but problematic for automation, aggregation, and databases.
+An extended version of this project also demonstrates how the same ETL process can be fully automated using **n8n**, reducing repetitive manual work and improving operational efficiency.
 
 ---
 
-## Raw Excel Structure (Conceptual Example)
+# Business Problem
 
-| No | Name     | Type     | 1 | 2 | 3 | ... |
-|----|----------|----------|---|---|---|-----|
-| 01 | Worker A | Janjang  | 3 | 5 | 7 |     |
-|    |          | Brondolan| 90|100|95 |     |
+Operational data collected from field activities is commonly maintained in Excel spreadsheets optimized for manual reporting rather than analytics.
 
-**Notes**
+Typical challenges include:
 
-- The reporting month is displayed as a merged cell above the table
-- Dates (1–30) are column headers
-- Janjang is measured in pieces (pcs)
-- Brondolan is measured in kilograms (kg)
-- Placeholder symbols may represent missing values
+- Merged cells used for reporting periods
+- Dates stored as column headers instead of row values
+- Multiple measurement types within a single table
+- Blank cells representing repeated values
+- Placeholder symbols for missing information
+- Manual data entry inconsistencies
+- Dataset structures unsuitable for database ingestion
 
----
-
-## Target Data Structure (Normalized)
-
-| no | name     | date       | type      | value | unit |
-|----|----------|------------|-----------|-------|------|
-| 01 | Worker A | 2024-01-01 | Janjang   | 3     | pcs  |
-| 01 | Worker A | 2024-01-01 | Brondolan | 90    | kg   |
-| 01 | Worker A | 2024-01-02 | Janjang   | 5     | pcs  |
-| 01 | Worker A | 2024-01-02 | Brondolan | 100   | kg   |
-
-This structure ensures:
-
-- One row represents one event
-- One column represents one meaning
-- Measurement units are explicit
-- Data is safe for database ingestion
+These layouts are easy for humans to read but difficult for automated processing, validation, aggregation, and reporting.
 
 ---
 
-## Transformation Approach
+# Solution
 
-The transformation follows a repeatable data engineering pattern:
+This project implements a repeatable ETL workflow that transforms operational spreadsheets into standardized datasets suitable for analytics.
 
-1. Separate metadata from row-level data
-2. Normalize visually empty values and placeholder symbols
-3. Flatten multi-level headers
-4. Convert dates from columns into row values (unpivot)
-5. Treat measurement types as categorical values
-6. Explicitly assign units of measurement
-7. Validate consistency and completeness
+The pipeline automatically:
 
----
+- Separates metadata from transactional records
+- Cleans inconsistent values and placeholder symbols
+- Normalizes spreadsheet layouts into tabular structures
+- Converts wide-format reports into row-based datasets
+- Applies business-rule validation
+- Flags invalid records for operational review
+- Produces analytics-ready datasets for downstream reporting
 
-## Engineering Focus
-
-This project emphasizes:
-
-- Data quality over visualization
-- Structural correctness over insight generation
-- Repeatability over one-off cleaning
-- Safe handling of sensitive operational data
-- Automation readiness for real workflows
-
-All examples are simplified and anonymized to reflect the original structure without exposing real production data.
+The same transformation logic has also been implemented as an automated **n8n workflow**, enabling spreadsheet ingestion, validation, error reporting, and dataset generation with minimal manual intervention.
 
 ---
 
-## Outcome
+# ETL Workflow
 
-The final dataset:
-
-- Can be directly loaded into relational databases
-- Supports reliable aggregation and filtering
-- Reduces ambiguity for downstream analytics
-- Provides a trustworthy foundation for further analysis
-- Can be automated into a repeatable ingestion pipeline
+```text
+Operational Excel Report
+            │
+            ▼
+Extract
+(Read spreadsheet)
+            │
+            ▼
+Normalize
+(Fill Down, Clean Values)
+            │
+            ▼
+Transform
+(Unpivot & Standardize)
+            │
+            ▼
+Business Rule Validation
+            │
+      ┌─────┴─────┐
+      ▼           ▼
+Valid Data   Exception Records
+      │           │
+      ▼           ▼
+Fact Dataset  Error Log
+      │
+      ▼
+Analytics / Database
+```
 
 ---
 
-## Key Takeaway
+# Engineering Decisions
 
-Data engineering ensures that data does not lie.  
-Insights come later, built on reliable foundations.
+## Why Normalize Spreadsheet Structures?
 
+Operational spreadsheets are optimized for manual reporting, not database storage. Normalization ensures each row represents one business event while each column represents a single attribute.
+
+---
+
+## Why Unpivot?
+
+Operational reports commonly store dates as columns. Analytical systems require dates as row values, making unpivoting essential for aggregation and filtering.
+
+---
+
+## Why Explicit Measurement Units?
+
+Different operational metrics (e.g., harvest count and weight) should never share the same column without context. Explicit units eliminate ambiguity and improve downstream analysis.
+
+---
+
+## Why Validate Before Loading?
+
+Incorrect operational records should not silently enter analytical datasets. Validation ensures data quality while separating problematic records for manual review.
+
+---
+
+## Why Generate an Error Log?
+
+Instead of discarding invalid records, the pipeline isolates them into an Error Log for operational clarification, preserving data integrity while supporting continuous process improvement.
+
+---
+
+# Data Quality
+
+The ETL process applies multiple validation rules before producing the final dataset.
+
+Current validation includes:
+
+- Placeholder value normalization
+- Blank value handling
+- Data completeness checks
+- Measurement consistency
+- Required field validation
+- Structural validation after transformation
+
+Records failing validation are routed to an Error Log instead of being silently corrected or removed.
+
+---
+
+# Business Rules
+
+Examples of operational business rules include:
+
+- Harvest quantity should not exist without its corresponding measurement.
+- Placeholder symbols are converted into standardized missing values.
+- Every measurement must have an explicit unit.
+- Every output row represents one observation.
+- Duplicate structural information is standardized before loading.
+
+These rules help ensure downstream reports are based on trusted and consistent data.
+
+---
+
+# Automation Workflow
+
+The ETL logic has been extended into an automated workflow using **n8n**.
+
+The automation performs:
+
+- Spreadsheet ingestion
+- Data transformation
+- Validation
+- Error logging
+- Dataset generation
+- Telegram notification
+
+This demonstrates how operational ETL processes can evolve into production-ready workflow automation.
+
+*(Insert n8n workflow screenshot here)*
+
+*(Insert Telegram notification screenshot here)*
+
+---
+
+# Input vs Output
+
+## Raw Operational Spreadsheet
+
+*(Insert original spreadsheet screenshot here)*
+
+Typical characteristics:
+
+- Human-readable layout
+- Multi-level headers
+- Merged cells
+- Mixed measurement types
+- Manual formatting
+
+---
+
+## Standardized Dataset
+
+*(Insert Fact Dataset screenshot here)*
+
+The resulting dataset:
+
+- One row = one observation
+- Database-ready
+- Analytics-ready
+- Easy to aggregate
+- Easy to validate
+
+---
+
+## Exception Handling
+
+*(Insert Error Log screenshot here)*
+
+Records failing validation are isolated for manual review rather than being discarded.
+
+This approach preserves data integrity while allowing operational teams to investigate reporting issues.
+
+---
+
+# Engineering Highlights
+
+- Designed a repeatable ETL workflow for operational spreadsheets
+- Applied normalization techniques including Fill Down and Unpivot
+- Implemented business-rule driven validation
+- Generated structured fact tables suitable for database ingestion
+- Separated invalid records into an Error Log for operational review
+- Extended the ETL process into a fully automated n8n workflow
+
+---
+
+# Tech Stack
+
+| Component | Technology |
+|------------|------------|
+| Programming | Power Query (M) |
+| Automation | n8n |
+| Data Storage | Google Sheets |
+| Notifications | Telegram |
+| Output | Normalized Fact Dataset & Error Log |
+
+---
+
+# Future Improvements
+
+Potential enhancements include:
+
+- Loading standardized datasets into a cloud data warehouse
+- Automated scheduling and monitoring
+- Incremental processing
+- Additional business-rule validation
+- Interactive operational dashboard
+- Integration with BI platforms
+
+---
+
+# Key Takeaway
+
+Operational spreadsheets are designed for people.
+
+Data engineering transforms them into datasets that systems can trust.
+
+Reliable analytics begins with reliable data.
