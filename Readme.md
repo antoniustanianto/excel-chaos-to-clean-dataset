@@ -181,7 +181,7 @@ This demonstrates how operational ETL processes can evolve into production-ready
 
 ## Raw Operational Spreadsheet
 
-![Sheet](screenshots/FactPanen.png)
+![Sheet](screenshots/RawData.png)
 
 Typical characteristics:
 
@@ -195,7 +195,7 @@ Typical characteristics:
 
 ## Standardized Dataset
 
-*(Insert Fact Dataset screenshot here)*
+![Sheet](screenshots/FactPanen.png)
 
 The resulting dataset:
 
