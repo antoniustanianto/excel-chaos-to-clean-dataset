@@ -171,9 +171,9 @@ The automation performs:
 
 This demonstrates how operational ETL processes can evolve into production-ready workflow automation.
 
-*(Insert n8n workflow screenshot here)*
+![Workflow](screenshots/workflow.jpg)
 
-*(Insert Telegram notification screenshot here)*
+![Report](screenshots/telegram.jpg)
 
 ---
 
@@ -181,7 +181,7 @@ This demonstrates how operational ETL processes can evolve into production-ready
 
 ## Raw Operational Spreadsheet
 
-*(Insert original spreadsheet screenshot here)*
+![Sheet](screenshots/sheet.png)
 
 Typical characteristics:
 
@@ -209,7 +209,8 @@ The resulting dataset:
 
 ## Exception Handling
 
-*(Insert Error Log screenshot here)*
+<img width="970" height="304" alt="image" src="https://github.com/user-attachments/assets/9317e4cd-c658-41ee-9fdb-392dae3630b8" />
+
 
 Records failing validation are isolated for manual review rather than being discarded.
 
