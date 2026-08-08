@@ -181,7 +181,7 @@ This demonstrates how operational ETL processes can evolve into production-ready
 
 ## Raw Operational Spreadsheet
 
-![Sheet](screenshots/sheet.png)
+![Sheet](screenshots/FactPanen.png)
 
 Typical characteristics:
 
@@ -209,7 +209,7 @@ The resulting dataset:
 
 ## Exception Handling
 
-<img width="970" height="304" alt="image" src="https://github.com/user-attachments/assets/9317e4cd-c658-41ee-9fdb-392dae3630b8" />
+![Sheet](screenshots/ErrorLog.png)
 
 
 Records failing validation are isolated for manual review rather than being discarded.
