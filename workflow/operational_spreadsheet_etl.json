@@ -1,0 +1,719 @@
+{
+  "name": "Laporan Kebun Excel",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {
+          "download": true
+        }
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        464,
+        -32
+      ],
+      "id": "1e5f1fd6-c2f0-4760-8263-6c3eb42fefe3",
+      "name": "Telegram Trigger",
+      "webhookId": "a07cc583-a614-46de-b570-1d3882aa1aed",
+      "alwaysOutputData": false,
+      "credentials": {
+        "telegramApi": {
+          "id": "SlG6rvpvmG28Bdgp",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "xlsx",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        1136,
+        -128
+      ],
+      "id": "761db2ac-8d0f-4f16-b1cb-009ce8c74b7f",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "jsCode": "let currentNoId = null;\nlet currentNama = null;\nlet estate = null;\n\nconst output = [];\n\n// 1️ cari estate dulu (sekali saja)\nfor (const item of items) {\n  const row = item.json;\n  for (const v of Object.values(row)) {\n    if (typeof v === 'string' && v.includes(':')) {\n      if (v.toLowerCase().includes('mrbe') || v.toLowerCase().includes('estate')) {\n        estate = v.replace(':', '').trim().toUpperCase();\n        break;\n      }\n    }\n  }\n  if (estate) break;\n}\n\nif (!estate) {\n  throw new Error('Estate tidak ditemukan. Format file salah.');\n}\n\n// 2️ loop normal data + fill down\nfor (const item of items) {\n  const row = item.json;\n\n  if (row['__EMPTY_1']) currentNoId = row['__EMPTY_1'];\n  if (row['__EMPTY_2']) currentNama = row['__EMPTY_2'];\n\n  output.push({\n    ...row,              // JANGAN buang __EMPTY_x\n    estate,              // 👈 estate disuntikkan di sini\n    no_id: currentNoId,\n    nama: currentNama,\n  });\n}\n\nreturn output.map(r => ({ json: r }));\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1584,
+        -128
+      ],
+      "id": "80d67d68-8f7c-47b1-a6bb-5572d2753bb7",
+      "name": "Node 01 - Fill Down Name, No ID, Estate"
+    },
+    {
+      "parameters": {
+        "jsCode": "const VALID_METRIC = ['HK', 'JJG', 'KG', 'BRONDOL', 'HA'];\nconst output = [];\n\nfor (const item of items) {\n  const row = item.json;\n\n  const metric = row.__EMPTY_5;\n  const noId = row.no_id;\n  const nama = row.nama;\n\n  //  skip kalau bukan metric valid\n  if (!VALID_METRIC.includes(metric)) continue;\n\n  //  skip kalau belum ada identitas karyawan\n  if (!noId || !nama) continue;\n\n  //  aman, ini data panen beneran\n  output.push({\n    ...row,     // JAGA SEMUA __EMPTY_x (penting buat pivot tanggal)\n    metric\n  });\n}\n\nreturn output.map(r => ({ json: r }));\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1808,
+        -128
+      ],
+      "id": "16551ae4-36f2-4188-83dd-ab0cf3cc3993",
+      "name": "Node 02 - Clean Data and Keep Structure"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ===============================\n// 1. Ambil semua row hasil extract\n// ===============================\nconst rows = items.map(i => i.json);\n\n// ===============================\n// 2. Helper: konversi bulan text → angka\n// ===============================\nconst monthMap = {\n  jan: 1, january: 1,\n  feb: 2, february: 2,\n  mar: 3, march: 3,\n  apr: 4, april: 4,\n  may: 5,\n  jun: 6, june: 6,\n  jul: 7, july: 7,\n  aug: 8, august: 8,\n  sep: 9, september: 9,\n  oct: 10, october: 10,\n  nov: 11, november: 11,\n  dec: 12, december: 12,\n};\n\n// ===============================\n// 3. Coba ambil periode dari SHEET\n// ===============================\nlet year = null;\nlet month = null;\nlet periodSource = null;\n\nfor (const row of rows.slice(0, 10)) {\n  for (const val of Object.values(row)) {\n    if (typeof val !== 'string') continue;\n\n    const text = val.toLowerCase();\n\n    // contoh: \"september 2025\", \"sep-25\", \"sep 2025\"\n    for (const [mText, mNum] of Object.entries(monthMap)) {\n      if (text.includes(mText)) {\n        const yearMatch = text.match(/20\\d{2}/);\n        const shortYearMatch = text.match(/\\b\\d{2}\\b/);\n\n        if (yearMatch) {\n          month = mNum;\n          year = Number(yearMatch[0]);\n          periodSource = 'sheet';\n        } else if (shortYearMatch) {\n          month = mNum;\n          year = 2000 + Number(shortYearMatch[0]);\n          periodSource = 'sheet';\n        }\n      }\n    }\n  }\n}\n\n// ===============================\n// 4. Fallback: ambil dari NAMA FILE\n// ===============================\nif (!year || !month) {\n  const fileName =\n    items[0]?.binary?.data?.fileName ||\n    items[0]?.json?.file_name ||\n    '';\n\n  const nameLower = fileName.toLowerCase();\n\n  for (const [mText, mNum] of Object.entries(monthMap)) {\n    if (nameLower.includes(mText)) {\n      const yearMatch = nameLower.match(/20\\d{2}/);\n      if (yearMatch) {\n        month = mNum;\n        year = Number(yearMatch[0]);\n        periodSource = 'filename';\n      }\n    }\n  }\n}\n\n// ===============================\n// 5. VALIDASI (WAJIB)\n// ===============================\nif (!year || !month) {\n  throw new Error(\n    'Periode (bulan & tahun) tidak ditemukan. Pastikan ada di sheet atau nama file.'\n  );\n}\n\n// ===============================\n// 6. Return metadata ke semua item\n// ===============================\nreturn items.map(item => ({\n  json: {\n    ...item.json,\n    year,\n    month,\n    period_source: periodSource\n  }\n}));\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1360,
+        -128
+      ],
+      "id": "02302407-70e1-43f1-85db-9721fec31978",
+      "name": "Node 0 - Extract and Fill Month and Year"
+    },
+    {
+      "parameters": {
+        "jsCode": "const output = [];\n\nfor (const item of items) {\n  const row = item.json;\n\n  const {\n    estate,\n    no_id,\n    nama,\n    metric,\n    year,\n    month,\n  } = row;\n\n  // loop semua kolom\n  for (const [key, value] of Object.entries(row)) {\n    // hanya kolom tanggal (__EMPTY_x) & value angka\n    if (!key.startsWith('__EMPTY_')) continue;\n    if (typeof value !== 'number') continue;\n    if (value === 0) continue; // skip nol (opsional)\n    //if (value === null || value === undefined || value === \"\") continue;\n    \n    const colIndex = Number(key.replace('__EMPTY_', ''));\n    if (isNaN(colIndex)) continue;\n\n    // mapping index ke day\n    const day = colIndex - 5; // __EMPTY_6 = tgl 1\n\n    if (day < 1 || day > 31) continue;\n\n    output.push({\n      estate,\n      no_id,\n      nama,\n      metric,\n      year,\n      month,\n      day,\n      value,\n    });\n  }\n}\n\nreturn output.map(r => ({ json: r }));\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1136,
+        112
+      ],
+      "id": "a15ebf99-ffc3-4dda-b833-883882ea715c",
+      "name": "Node 3 -Unpivot Tanggal"
+    },
+    {
+      "parameters": {
+        "jsCode": "return items.map(item => {\n  return {\n    json: {\n      ...item.json,\n      uploaded_at: new Date().toISOString()\n    }\n  };\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1360,
+        112
+      ],
+      "id": "669efa44-2075-49a7-b7be-a355b5764a63",
+      "name": "Add Uploaded Timestamp"
+    },
+    {
+      "parameters": {
+        "jsCode": "const required = [\"estate\",\"no_id\",\"nama\",\"metric\",\"year\",\"month\",\"day\",\"value\"];\n\nreturn items.map(item => {\n  const r = item.json;\n  const errors = [];\n  const warnings = [];\n\n  // Required fields\n  for (const f of required) {\n    if (r[f] === undefined || r[f] === null || r[f] === \"\") {\n      errors.push(`Missing field: ${f}`);\n    }\n  }\n\n  // Type checks\n  if (r.value !== undefined && (isNaN(Number(r.value)))) {\n    errors.push(`Value not numeric: ${r.value}`);\n  }\n\n  // Negative check\n  if (Number(r.value) < 0) {\n    errors.push(`Negative value: ${r.value}`);\n  }\n\n  // Date sanity\n  const d = new Date(r.year, r.month-1, r.day);\n  if (isNaN(d.getTime())) {\n    errors.push(`Invalid date: ${r.year}-${r.month}-${r.day}`);\n  }\n\n  // Example soft rule (optional)\n  // Kalau metric JJG tapi value 0 → warning saja\n  if (r.metric === \"JJG\" && Number(r.value) === 0) {\n    warnings.push(`JJG is zero`);\n  }\n\n  const is_valid = errors.length === 0;\n\n  return {\n    json: {\n      ...r,\n      is_valid,\n      validation_errors: errors.join(\"; \"),\n      validation_warnings: warnings.join(\"; \"),\n      validated_at: new Date().toISOString()\n    }\n  };\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1584,
+        112
+      ],
+      "id": "ffeb3d79-7f4f-48a7-b994-919f852287c5",
+      "name": "Validation"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "932f3f8d-f75d-4a7f-ae48-9351baedb6ed",
+              "leftValue": "={{ $json.message.document.file_name }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        688,
+        -32
+      ],
+      "id": "27945e2c-193a-422d-86ef-d6e825ef750f",
+      "name": "IF File Exist"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "c4dae94f-5feb-47ca-b3c5-916f7e2ad807",
+              "leftValue": "={{ $json.message.document.file_name }}",
+              "rightValue": ".xlsx",
+              "operator": {
+                "type": "string",
+                "operation": "endsWith"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        912,
+        -128
+      ],
+      "id": "88785c56-b818-4e3e-a9e2-4a2d7962a1ac",
+      "name": "IF File ends with .xlsx"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.message.chat.id }}",
+        "text": "Tolong kirim File Excel ya",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        912,
+        64
+      ],
+      "id": "d99ba7d5-09b4-4f09-b05c-6b304c2c0f3c",
+      "name": "Send Warning to User",
+      "webhookId": "558614da-f17f-40c2-b27a-6678a7315a5c",
+      "credentials": {
+        "telegramApi": {
+          "id": "SlG6rvpvmG28Bdgp",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "c702f48d-1cd0-4023-ab5e-145426e5c883",
+              "leftValue": "={{ $json.is_valid }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1808,
+        112
+      ],
+      "id": "9744e550-4a0c-4208-b31f-65a4bde5f8de",
+      "name": "IF Record Valid"
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1TbB9u55fQDJ_7Dpi3dG_cwtINnngRzBxBNbtw-2o1iI",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Fact_panen",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1TbB9u55fQDJ_7Dpi3dG_cwtINnngRzBxBNbtw-2o1iI/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "estate": "={{ $json.estate }}",
+            "no_id": "={{ $json.no_id }}",
+            "nama": "={{ $json.nama }}",
+            "metric": "={{ $json.metric }}",
+            "year": "={{ $json.year }}",
+            "month": "={{ $json.month }}",
+            "day": "={{ $json.tanggal }}",
+            "value": "={{ $json.value }}",
+            "uploaded_at": "={{ $json.uploaded_at }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "estate",
+              "displayName": "estate",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "no_id",
+              "displayName": "no_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "nama",
+              "displayName": "nama",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "metric",
+              "displayName": "metric",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "year",
+              "displayName": "year",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "month",
+              "displayName": "month",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "day",
+              "displayName": "day",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "value",
+              "displayName": "value",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "uploaded_at",
+              "displayName": "uploaded_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        2032,
+        16
+      ],
+      "id": "efee3611-a99f-459d-a360-74cc37ac979f",
+      "name": "Append row in sheet Fact Panen",
+      "credentials": {
+        "googleApi": {
+          "id": "vJam1G6SSi2qbR27",
+          "name": "Google Service Account account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1TbB9u55fQDJ_7Dpi3dG_cwtINnngRzBxBNbtw-2o1iI",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1720435014,
+          "mode": "list",
+          "cachedResultName": "Error_log",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1TbB9u55fQDJ_7Dpi3dG_cwtINnngRzBxBNbtw-2o1iI/edit#gid=1720435014"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "estate": "={{ $json.estate }}",
+            "no_id": "={{ $json.no_id }}",
+            "nama": "={{ $json.nama }}",
+            "metric": "={{ $json.metric }}",
+            "year": "={{ $json.year }}",
+            "month": "={{ $json.month }}",
+            "day": "={{ $json.tanggal }}",
+            "value": "={{ $json.value }}",
+            "uploaded_at": "={{ $json.uploaded_at }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "estate",
+              "displayName": "estate",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "no_id",
+              "displayName": "no_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "nama",
+              "displayName": "nama",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "metric",
+              "displayName": "metric",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "year",
+              "displayName": "year",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "month",
+              "displayName": "month",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "day",
+              "displayName": "day",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "value",
+              "displayName": "value",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "uploaded_at",
+              "displayName": "uploaded_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        2032,
+        208
+      ],
+      "id": "18f7a64e-4fb0-4f85-84e3-f50da4f97dc7",
+      "name": "Append row in Error Log",
+      "credentials": {
+        "googleApi": {
+          "id": "vJam1G6SSi2qbR27",
+          "name": "Google Service Account account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.message.chat.id }}",
+        "text": "=🚨 Data invalid terdeteksi\n\nEstate: {{$json.estate}}\nNama: {{$json.nama}}\nMetric: {{$json.metric}}\nTanggal: {{$json.year}}-{{$json.month}}-{{$json.day}}\n\nError:\n{{$json.validation_errors}}\n",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2256,
+        208
+      ],
+      "id": "766c2a7c-f4f6-471f-a91a-b0f24dd3b262",
+      "name": "Send Data Invalid Warning to User",
+      "webhookId": "558614da-f17f-40c2-b27a-6678a7315a5c",
+      "credentials": {
+        "telegramApi": {
+          "id": "SlG6rvpvmG28Bdgp",
+          "name": "Telegram account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "IF File Exist",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "Node 0 - Extract and Fill Month and Year",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Node 01 - Fill Down Name, No ID, Estate": {
+      "main": [
+        [
+          {
+            "node": "Node 02 - Clean Data and Keep Structure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Node 02 - Clean Data and Keep Structure": {
+      "main": [
+        [
+          {
+            "node": "Node 3 -Unpivot Tanggal",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Node 0 - Extract and Fill Month and Year": {
+      "main": [
+        [
+          {
+            "node": "Node 01 - Fill Down Name, No ID, Estate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Node 3 -Unpivot Tanggal": {
+      "main": [
+        [
+          {
+            "node": "Add Uploaded Timestamp",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add Uploaded Timestamp": {
+      "main": [
+        [
+          {
+            "node": "Validation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validation": {
+      "main": [
+        [
+          {
+            "node": "IF Record Valid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF File Exist": {
+      "main": [
+        [
+          {
+            "node": "IF File ends with .xlsx",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Warning to User",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF File ends with .xlsx": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Record Valid": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet Fact Panen",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Append row in Error Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet Fact Panen": {
+      "main": [
+        []
+      ]
+    },
+    "Append row in Error Log": {
+      "main": [
+        [
+          {
+            "node": "Send Data Invalid Warning to User",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "ff1d5bea-10e0-403b-93ff-ef7d4549c2e6",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "76dad86465b6c5a2227102a383bdd8a1c5b86976b48c4df3035a1d002ff45c52"
+  },
+  "nodeGroups": [],
+  "id": "5DIYUfRwZSDND6GYShvyf",
+  "tags": []
+}
