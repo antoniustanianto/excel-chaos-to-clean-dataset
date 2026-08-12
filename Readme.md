@@ -171,7 +171,7 @@ The automation performs:
 
 This demonstrates how operational ETL processes can evolve into production-ready workflow automation.
 
-![Workflow](screenshots/workflow.jpg)
+![Workflow](screenshots/workflow.png)
 
 ![Report](screenshots/telegram.jpg)
 
