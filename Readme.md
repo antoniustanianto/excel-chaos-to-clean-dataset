@@ -233,8 +233,9 @@ This approach preserves data integrity while allowing operational teams to inves
 
 | Component | Technology |
 |------------|------------|
-| Programming | Power Query (M) |
-| Automation | n8n |
+| Manual Transformation | Power Query (M) |
+| Workflow Automation | n8n |
+| Automated Transformation | Javascript (n8n Code Nodes) |
 | Data Storage | Google Sheets |
 | Notifications | Telegram |
 | Output | Normalized Fact Dataset & Error Log |
