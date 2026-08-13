@@ -1,264 +1,368 @@
 # Operational Spreadsheet ETL Pipeline
 
-> Transforming human-oriented operational spreadsheets into trusted, analytics-ready datasets through automated validation, normalization, and business-rule driven ETL.
+Transforming human-readable operational spreadsheets into a normalized, validated, and repeatable dataset using Power Query, n8n, and JavaScript.
 
-| Project | Details |
-|----------|---------|
-| **Business Domain** | Plantation Operations |
-| **Project Type** | Operational Spreadsheet ETL Pipeline |
-| **Primary Capability** | ETL, Data Quality & Data Standardization |
-| **Data Source** | Operational Excel Reports |
-| **Architecture** | ETL |
-| **Automation** | n8n Workflow |
-| **Status** | ✅ Completed |
+## Project Overview
 
----
-
-# Overview
-
-Operational reporting spreadsheets are typically designed for human readability rather than machine processing. While convenient for daily operations, these spreadsheets often contain merged cells, repeated values, multi-level headers, and inconsistent structures that make automated processing difficult.
-
-This project demonstrates how operational Excel reports can be transformed into trusted, analytics-ready datasets through a repeatable ETL process. The solution focuses on improving data quality, enforcing business rules, and preparing standardized datasets for downstream reporting and database ingestion.
-
-An extended version of this project also demonstrates how the same ETL process can be fully automated using **n8n**, reducing repetitive manual work and improving operational efficiency.
+| | |
+|---|---|
+| **Business Problem** | Operational Excel reports were designed for human readability, making the data difficult to process consistently for reporting and downstream use. |
+| **Solution** | Prototype the transformation logic in Power Query, then automate ingestion, normalization, validation, error routing, and notification using n8n and JavaScript. |
+| **Input** | Operational Excel spreadsheet with dates as columns, metrics as rows, repeated employee information, and inconsistent values. |
+| **Output** | Normalized Fact dataset, Error Log for invalid records, and Telegram notification for detected anomalies. |
+| **Key Focus** | Schema normalization, data quality, business-rule validation, and repeatable ETL automation. |
 
 ---
 
-# Business Problem
+## Business Problem
 
-Operational data collected from field activities is commonly maintained in Excel spreadsheets optimized for manual reporting rather than analytics.
+Operational data was submitted through Excel files designed primarily for human readability rather than machine processing.
 
-Typical challenges include:
+The source files contained structures such as:
 
-- Merged cells used for reporting periods
-- Dates stored as column headers instead of row values
-- Multiple measurement types within a single table
-- Blank cells representing repeated values
-- Placeholder symbols for missing information
-- Manual data entry inconsistencies
-- Dataset structures unsuitable for database ingestion
+- Dates stored horizontally as columns (1–31)
+- Operational metrics stored as rows
+- Employee information that required fill-down
+- Mixed data types and placeholder values
+- Multiple metrics within the same report structure
+- Data inconsistencies that could not be detected through datatype validation alone
 
-These layouts are easy for humans to read but difficult for automated processing, validation, aggregation, and reporting.
+This format worked for operational users, but made the data difficult to process consistently for reporting and downstream analysis.
 
----
-
-# Solution
-
-This project implements a repeatable ETL workflow that transforms operational spreadsheets into standardized datasets suitable for analytics.
-
-The pipeline automatically:
-
-- Separates metadata from transactional records
-- Cleans inconsistent values and placeholder symbols
-- Normalizes spreadsheet layouts into tabular structures
-- Converts wide-format reports into row-based datasets
-- Applies business-rule validation
-- Flags invalid records for operational review
-- Produces analytics-ready datasets for downstream reporting
-
-The same transformation logic has also been implemented as an automated **n8n workflow**, enabling spreadsheet ingestion, validation, error reporting, and dataset generation with minimal manual intervention.
+The objective was to convert the spreadsheet into a standardized row-level dataset while introducing repeatable transformation, validation, and error handling.
 
 ---
 
-# ETL Workflow
+## Solution
+
+The solution was developed in two stages.
+
+### 1. Transformation Proof of Concept — Power Query
+
+Power Query was first used to explore the spreadsheet structure and validate the transformation approach.
+
+The prototype focused on:
+
+- Cleaning the spreadsheet structure
+- Filling down employee information
+- Converting horizontal date columns into rows using Unpivot
+- Standardizing metric and value fields
+- Producing a normalized tabular dataset
+
+This provided a quick way to validate the transformation logic before automating the process.
+
+### 2. Automated ETL Workflow — n8n + JavaScript
+
+Once the transformation pattern was established, the process was automated using n8n and custom JavaScript.
+
+The automated workflow handles:
+
+- Excel file ingestion through Telegram
+- Spreadsheet extraction
+- Reporting period extraction
+- Data cleaning and normalization
+- Unpivot transformation
+- Basic data validation
+- Business-rule validation
+- Valid and invalid record routing
+- Fact and Error Log outputs
+- Telegram notification for detected anomalies
+
+---
+
+## Pipeline Architecture
 
 ```text
-Operational Excel Report
-            │
-            ▼
-Extract
-(Read spreadsheet)
-            │
-            ▼
-Normalize
-(Fill Down, Clean Values)
-            │
-            ▼
-Transform
-(Unpivot & Standardize)
-            │
-            ▼
+Telegram Upload
+      ↓
+Excel Extraction
+      ↓
+Extract Reporting Period
+      ↓
+Fill Down Employee Data
+      ↓
+Clean & Standardize Structure
+      ↓
+Unpivot Date Columns
+      ↓
+Add Processing Timestamp
+      ↓
+Basic Validation
+      ↓
 Business Rule Validation
-            │
-      ┌─────┴─────┐
-      ▼           ▼
-Valid Data   Exception Records
-      │           │
-      ▼           ▼
-Fact Dataset  Error Log
-      │
-      ▼
-Analytics / Database
+      ↓
+Is Record Valid?
+   ↙             ↘
+Valid           Invalid
+  ↓                ↓
+Fact Dataset     Error Log
+                   ↓
+             Telegram Alert
+```
+---
+
+## Workflow Screenshots
+
+### 1. Automated ETL Workflow
+
+The n8n workflow orchestrates the complete process from Telegram file ingestion through transformation, validation, output routing, and notification.
+
+![Automated ETL Workflow](screenshots/workflow.png)
+
+### 2. Source Spreadsheet
+
+Example of the original operational spreadsheet designed for human readability, with dates represented as columns and operational metrics represented as rows.
+
+![Source Spreadsheet](screenshots/source_spreadsheet.png)
+
+### 3. Normalized Fact Dataset
+
+Valid records are transformed into a normalized row-level structure and written to the Fact dataset.
+
+![Normalized Fact Dataset](screenshots/fact_output.png)
+
+### 4. Data Quality Error Handling
+
+Records that fail technical or business-rule validation are routed to the Error Log with the validation reason preserved for investigation.
+
+![Error Log](screenshots/error_log.png)
+
+### 5. Automated Telegram Alert
+
+Detected data-quality issues can trigger an automated Telegram notification, allowing operational users to identify problematic records without manually reviewing the entire dataset.
+
+![Telegram Alert](screenshots/telegram_alert.png)
+---
+
+## Data Transformation
+
+The original spreadsheet was structured for operational readability.
+
+Example:
+
+| Employee | Metric | 1 | 2 | 3 | ... |
+|---|---|---:|---:|---:|---|
+| Worker A | JJG | 70 | 65 | 80 | ... |
+| Worker A | KG | 900 | 0 | 1050 | ... |
+
+Dates were represented as columns while operational metrics were represented as rows.
+
+The pipeline converts this structure into normalized records:
+
+| Employee | Year | Month | Day | Metric | Value |
+|---|---:|---:|---:|---|---:|
+| Worker A | 2024 | 9 | 1 | JJG | 70 |
+| Worker A | 2024 | 9 | 1 | KG | 900 |
+| Worker A | 2024 | 9 | 2 | JJG | 65 |
+| Worker A | 2024 | 9 | 2 | KG | 0 |
+
+Each row represents **one operational metric for one employee on one date**.
+
+This structure is easier to validate, query, aggregate, and consume by downstream processes.
+
+Zero values are intentionally preserved because `0` can carry business meaning and may be required for downstream validation.
+
+---
+
+## Data Quality & Validation
+
+The pipeline separates validation into two layers:
+
+### Basic Validation
+
+Generic data-quality checks are applied to each normalized record.
+
+Current checks include:
+
+- Required fields must be present
+- Metric values must be numeric
+- Negative values are rejected
+- Year, month, and day must form a valid calendar date
+
+Records that fail these checks are marked as invalid.
+
+### Business Rule Validation
+
+Business validation evaluates relationships between operational metrics rather than validating individual values only.
+
+An example business rule implemented in this project is:
+
+```text
+JJG > 0 AND KG = 0
+→ Flag as operational anomaly
 ```
 
----
+Example:
 
-# Engineering Decisions
+```text
+Employee : Worker A
+Date     : 2024-09-02
+JJG      : 65
+KG       : 0
+```
 
-## Why Normalize Spreadsheet Structures?
+Both values are technically valid numbers.
 
-Operational spreadsheets are optimized for manual reporting, not database storage. Normalization ensures each row represents one business event while each column represents a single attribute.
+However, a positive harvest count (`JJG`) with zero recorded weight (`KG`) represents an operational inconsistency and should be reviewed.
 
----
+The related records are therefore marked as invalid and routed to the Error Log.
 
-## Why Unpivot?
-
-Operational reports commonly store dates as columns. Analytical systems require dates as row values, making unpivoting essential for aggregation and filtering.
-
----
-
-## Why Explicit Measurement Units?
-
-Different operational metrics (e.g., harvest count and weight) should never share the same column without context. Explicit units eliminate ambiguity and improve downstream analysis.
+Business validation is intentionally separated from basic validation because these rules are domain-specific and may change according to operational requirements.
 
 ---
 
-## Why Validate Before Loading?
+## Error Handling
 
-Incorrect operational records should not silently enter analytical datasets. Validation ensures data quality while separating problematic records for manual review.
+Validation does not stop the entire pipeline when problematic records are detected.
 
----
+Each record receives an `is_valid` status:
 
-## Why Generate an Error Log?
+```text
+is_valid = true
+→ Fact Dataset
 
-Instead of discarding invalid records, the pipeline isolates them into an Error Log for operational clarification, preserving data integrity while supporting continuous process improvement.
+is_valid = false
+→ Error Log
+→ Telegram Alert
+```
 
----
+This allows valid records to continue through the pipeline while invalid records are isolated for investigation.
 
-# Data Quality
-
-The ETL process applies multiple validation rules before producing the final dataset.
-
-Current validation includes:
-
-- Placeholder value normalization
-- Blank value handling
-- Data completeness checks
-- Measurement consistency
-- Required field validation
-- Structural validation after transformation
-
-Records failing validation are routed to an Error Log instead of being silently corrected or removed.
+The Error Log stores the problematic record together with its validation reason, making anomalies easier to trace and review.
 
 ---
 
-# Business Rules
+## Output
 
-Examples of operational business rules include:
+### Fact Dataset
 
-- Harvest quantity should not exist without its corresponding measurement.
-- Placeholder symbols are converted into standardized missing values.
-- Every measurement must have an explicit unit.
-- Every output row represents one observation.
-- Duplicate structural information is standardized before loading.
+Valid records are written into a normalized Fact dataset.
 
-These rules help ensure downstream reports are based on trusted and consistent data.
+Example fields:
 
----
+| Field | Description |
+|---|---|
+| `estate` | Operational estate/source |
+| `no_id` | Employee identifier |
+| `nama` | Employee name |
+| `year` | Reporting year |
+| `month` | Reporting month |
+| `day` | Operational day |
+| `metric` | Operational metric |
+| `value` | Metric value |
+| `uploaded_at` | Processing/upload timestamp |
 
-# Automation Workflow
+### Error Log
 
-The ETL logic has been extended into an automated workflow using **n8n**.
+Invalid records are stored separately together with validation information such as:
 
-The automation performs:
+- Original record values
+- Validation status
+- Validation error
+- Validation timestamp
 
-- Spreadsheet ingestion
-- Data transformation
-- Validation
-- Error logging
-- Dataset generation
-- Telegram notification
-
-This demonstrates how operational ETL processes can evolve into production-ready workflow automation.
-
-![Workflow](screenshots/workflow.png)
-
-![Report](screenshots/telegram.jpg)
+This keeps problematic records visible without contaminating the clean Fact dataset.
 
 ---
 
-# Input vs Output
+## Tech Stack
 
-## Raw Operational Spreadsheet
-
-![Sheet](screenshots/RawData.png)
-
-Typical characteristics:
-
-- Human-readable layout
-- Multi-level headers
-- Merged cells
-- Mixed measurement types
-- Manual formatting
+| Technology | Purpose |
+|---|---|
+| **Power Query** | Initial transformation proof of concept |
+| **n8n** | Workflow orchestration and automation |
+| **JavaScript** | Custom transformation and validation logic |
+| **Google Sheets** | Fact dataset and Error Log storage |
+| **Telegram Bot** | File ingestion and anomaly notification |
 
 ---
 
-## Standardized Dataset
+## Key Engineering Decisions
 
-![Sheet](screenshots/FactPanen.png)
+### 1. Human-Readable Data ≠ Machine-Ready Data
 
-The resulting dataset:
+The original spreadsheet was designed for operational users.
 
-- One row = one observation
-- Database-ready
-- Analytics-ready
-- Easy to aggregate
-- Easy to validate
+Instead of forcing downstream processes to repeatedly interpret the original layout, the pipeline converts the data into a standardized row-level structure.
 
----
+### 2. Prototype Before Automating
 
-## Exception Handling
+Power Query was used to quickly explore the spreadsheet and validate the transformation logic.
 
-![Sheet](screenshots/ErrorLog.png)
+Once the normalization pattern was understood, the process was implemented as an automated workflow using n8n and JavaScript.
 
+### 3. Preserve Zero Values
 
-Records failing validation are isolated for manual review rather than being discarded.
+Zero values are not automatically discarded.
 
-This approach preserves data integrity while allowing operational teams to investigate reporting issues.
+A value of `0` is different from a missing record and may contain important business information.
 
----
+For example:
 
-# Engineering Highlights
+```text
+JJG = 70
+KG  = 0
+```
 
-- Designed a repeatable ETL workflow for operational spreadsheets
-- Applied normalization techniques including Fill Down and Unpivot
-- Implemented business-rule driven validation
-- Generated structured fact tables suitable for database ingestion
-- Separated invalid records into an Error Log for operational review
-- Extended the ETL process into a fully automated n8n workflow
+Without preserving the zero value, this operational inconsistency could not be detected by downstream business validation.
 
----
+### 4. Separate Technical and Business Validation
 
-# Tech Stack
+Basic validation handles generic data-quality requirements.
 
-| Component | Technology |
-|------------|------------|
-| Manual Transformation | Power Query (M) |
-| Workflow Automation | n8n |
-| Automated Transformation | Javascript (n8n Code Nodes) |
-| Data Storage | Google Sheets |
-| Notifications | Telegram |
-| Output | Normalized Fact Dataset & Error Log |
+Business validation handles domain-specific relationships between records.
+
+This separation makes the workflow easier to maintain because business rules can evolve independently from the core technical validation logic.
+
+### 5. Use Infrastructure Appropriate to the Workload
+
+The workflow processes relatively small operational spreadsheet files.
+
+n8n provides sufficient orchestration, branching, integration, and notification capabilities for this workload without introducing unnecessary infrastructure complexity.
+
+The objective is to solve the data problem reliably rather than introduce additional tools only for technical complexity.
 
 ---
 
-# Future Improvements
+## Repository Structure
 
-Potential enhancements include:
+```text
+operational-spreadsheet-etl/
+│
+├── README.md
+│
+├── workflow/
+│   └── operational-spreadsheet-etl.json
+│
+├── sample_data/
+│   └── sample_input.xlsx
+│
+└── screenshots/
+    ├── workflow.png
+    ├── fact_output.png
+    └── error_log.png
+```
 
-- Loading standardized datasets into a cloud data warehouse
-- Automated scheduling and monitoring
-- Incremental processing
-- Additional business-rule validation
-- Interactive operational dashboard
-- Integration with BI platforms
+> Sample data contains anonymized or synthetic operational records only.
 
 ---
 
-# Key Takeaway
+## Key Takeaways
 
-Operational spreadsheets are designed for people.
+This project demonstrates how a spreadsheet designed for human readability can be transformed into a repeatable data workflow.
 
-Data engineering transforms them into datasets that systems can trust.
+The project focuses on:
 
-Reliable analytics begins with reliable data.
+- Schema normalization
+- ETL automation
+- Data quality validation
+- Domain-specific business validation
+- Error isolation
+- Workflow orchestration
+- Automated notification
+
+The key lesson from the project is:
+
+> **Data that is technically valid is not necessarily operationally valid.**
+
+A reliable data pipeline needs to handle both.
