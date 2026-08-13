@@ -113,25 +113,26 @@ The n8n workflow orchestrates the complete process from Telegram file ingestion 
 
 Example of the original operational spreadsheet designed for human readability, with dates represented as columns and operational metrics represented as rows.
 
-![Source Spreadsheet](screenshots/source_spreadsheet.png)
+![Source Spreadsheet](screenshots/raw.png)
 
 ### 3. Normalized Fact Dataset
 
 Valid records are transformed into a normalized row-level structure and written to the Fact dataset.
 
-![Normalized Fact Dataset](screenshots/fact_output.png)
+![Normalized Fact Dataset](screenshots/FactPanen1.png)
+![Normalized Fact Dataset](screenshots/FactPanen2.png)
 
 ### 4. Data Quality Error Handling
 
 Records that fail technical or business-rule validation are routed to the Error Log with the validation reason preserved for investigation.
 
-![Error Log](screenshots/error_log.png)
+![Error Log](screenshots/ErrorLog.png)
 
 ### 5. Automated Telegram Alert
 
 Detected data-quality issues can trigger an automated Telegram notification, allowing operational users to identify problematic records without manually reviewing the entire dataset.
 
-![Telegram Alert](screenshots/telegram_alert.png)
+![Telegram Alert](screenshots/telegram.png)
 ---
 
 ## Data Transformation
